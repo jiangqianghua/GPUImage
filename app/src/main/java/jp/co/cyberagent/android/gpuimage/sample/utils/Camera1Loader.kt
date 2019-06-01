@@ -4,6 +4,7 @@ package jp.co.cyberagent.android.gpuimage.sample.utils
 
 import android.app.Activity
 import android.hardware.Camera
+import android.media.Image
 import android.util.Log
 import android.view.Surface
 
@@ -69,7 +70,7 @@ class Camera1Loader(private val activity: Activity) : CameraLoader() {
                 return@setPreviewCallback
             }
             val size = camera.parameters.previewSize
-            onPreviewFrame?.invoke(data, size.width, size.height)
+            // onPreviewFrame?.invoke(data, size.width, size.height)
         }
         cameraInstance!!.startPreview()
     }

@@ -1,9 +1,12 @@
 package jp.co.cyberagent.android.gpuimage.sample.utils
 
+import android.graphics.Bitmap
+import android.media.Image
+
 
 abstract class CameraLoader {
 
-    protected var onPreviewFrame: ((data: ByteArray, width: Int, height: Int) -> Unit)? = null
+    protected var onPreviewFrame: ((bitmap:Bitmap, data: ByteArray, width: Int, height: Int) -> Unit)? = null
 
     abstract fun onResume(width: Int, height: Int)
 
@@ -15,7 +18,7 @@ abstract class CameraLoader {
 
     abstract fun hasMultipleCamera(): Boolean
 
-    fun setOnPreviewFrameListener(onPreviewFrame: (data: ByteArray, width: Int, height: Int) -> Unit) {
+    fun setOnPreviewFrameListener(onPreviewFrame: (bitmap:Bitmap, data: ByteArray, width: Int, height: Int) -> Unit) {
         this.onPreviewFrame = onPreviewFrame
     }
 }

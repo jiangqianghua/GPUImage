@@ -16,28 +16,44 @@
 
 package jp.co.cyberagent.android.gpuimage.sample.activity
 
+import android.content.res.Resources
+import android.media.FaceDetector
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.widget.RelativeLayout
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import jp.co.cyberagent.android.gpuimage.GPUImageView
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageAlphaBlendFilter
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter
 import jp.co.cyberagent.android.gpuimage.sample.GPUImageFilterTools
 import jp.co.cyberagent.android.gpuimage.sample.GPUImageFilterTools.FilterAdjuster
 import jp.co.cyberagent.android.gpuimage.sample.R
-import jp.co.cyberagent.android.gpuimage.sample.utils.Camera1Loader
-import jp.co.cyberagent.android.gpuimage.sample.utils.Camera2Loader
-import jp.co.cyberagent.android.gpuimage.sample.utils.CameraLoader
-import jp.co.cyberagent.android.gpuimage.sample.utils.doOnLayout
+import jp.co.cyberagent.android.gpuimage.sample.bean.ImageDataBean
+import jp.co.cyberagent.android.gpuimage.sample.utils.*
 import jp.co.cyberagent.android.gpuimage.util.Rotation
+import kotlinx.android.synthetic.main.activity_home_main.view.*
+import android.R.attr.y
+import android.R.attr.x
+import android.graphics.*
+
 
 class CameraActivity : AppCompatActivity() {
 
+    private val gpuImageAlphaBlendFilter = GPUImageAlphaBlendFilter() ;
     private val gpuImageView: GPUImageView by lazy { findViewById<GPUImageView>(R.id.surfaceView) }
     private val seekBar: SeekBar by lazy { findViewById<SeekBar>(R.id.seekBar) }
+    private var faceDetectionAsyncTask: FaceDetectionAsyncTask ?= null
+    private val bgImage: RelativeLayout by lazy {
+        findViewById<RelativeLayout>(R.id.bgimage)
+    }
+    private val resouce1:Resources by lazy {
+        this.resources
+    }
     private val cameraLoader: CameraLoader by lazy {
         if (Build.VERSION.SDK_INT < 21) {
             Camera1Loader(this)
@@ -50,7 +66,6 @@ class CameraActivity : AppCompatActivity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
-
         seekBar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 filterAdjuster?.adjust(progress)
@@ -70,15 +85,61 @@ class CameraActivity : AppCompatActivity() {
                 visibility = View.GONE
             }
             setOnClickListener {
+//                gpuImageAlphaBlendFilter.bitmap = BitmapFactory.decodeResource(resouce1,R.mipmap.a)
+//                gpuImageView.filter = gpuImageAlphaBlendFilter
                 cameraLoader.switchCamera()
                 gpuImageView.setRotation(getRotation(cameraLoader.getCameraOrientation()))
             }
         }
-        cameraLoader.setOnPreviewFrameListener { data, width, height ->
+        val bitmap1 = BitmapFactory.decodeResource(resouce1,R.mipmap.d)
+        cameraLoader.setOnPreviewFrameListener { bitmap, data, width, height ->
             gpuImageView.updatePreviewFrame(data, width, height)
+            faceDetectionAsyncTask = FaceDetectionAsyncTask()
+            faceDetectionAsyncTask?.execute(ImageDataBean(bitmap,data,width,height))
+            faceDetectionAsyncTask?.setOnFaceDetectionAsyncTask(object: FaceDetectionAsyncTask.OnFaceDetectionAsyncTask{
+                override fun onFaceDetected(faces: Array<out FaceDetector.Face>?) {
+                    Log.d("TAG","---" + faces?.size)
+                    val size = faces?.size
+                    if(size == 0)
+                        return
+                    for (index in 0 until  1){
+                        val face = faces!![index]
+                        val r = RectF()
+                        var pf = PointF()
+                        if(face == null)
+                            return
+                        face.getMidPoint(pf)
+//                        r.left = pf.x - face.eyesDistance() / 2
+//                        r.right = pf.x + face.eyesDistance() / 2
+//                        r.top = pf.y - face.eyesDistance() / 2
+//                        r.bottom = pf.y + face.eyesDistance() / 2
+                        gpuImageAlphaBlendFilter.bitmap = BitMapUtils.createNewBtiMap(this@CameraActivity,bitmap1,pf.x.toInt(),pf.y.toInt())
+                        gpuImageAlphaBlendFilter.onOutputSizeChanged(1,1)
+                        gpuImageAlphaBlendFilter.setMix(1.0f)
+                        gpuImageView.filter = gpuImageAlphaBlendFilter
+                    }
+                    // gpuImageView.filter = null
+
+
+                }
+            })
         }
+        //val newBitmap = BitMapUtils.scaleBitmap(BitmapFactory.decodeResource(resouce,R.mipmap.d), 20, 20)
+//        val bitmap = BitmapFactory.decodeResource(resouce1,R.mipmap.d)
+        // gpuImageAlphaBlendFilter.bitmap = BitMapUtils.createBitmap(bgImage)
+
+//        gpuImageAlphaBlendFilter.bitmap = BitMapUtils.createNewBtiMap(this,bitmap,40,400)
+//        gpuImageAlphaBlendFilter.onOutputSizeChanged(1,1)
+//        gpuImageAlphaBlendFilter.setMix(1.0f)
+//        gpuImageView.filter = gpuImageAlphaBlendFilter
         gpuImageView.setRotation(getRotation(cameraLoader.getCameraOrientation()))
         gpuImageView.setRenderMode(GPUImageView.RENDERMODE_CONTINUOUSLY)
+
+        // gpuImageView.setImage(BitmapFactory.decodeResource(resouce1,R.mipmap.b))
+
+
+        // faceDetectionAsyncTask.execute(bitmap)
+
     }
 
     override fun onResume() {

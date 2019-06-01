@@ -3,6 +3,7 @@ package jp.co.cyberagent.android.gpuimage.sample.utils
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.hardware.camera2.*
 import android.media.ImageReader
@@ -11,6 +12,9 @@ import android.util.Log
 import android.util.Size
 import android.view.Surface
 import androidx.annotation.RequiresApi
+import android.graphics.Bitmap
+
+
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 class Camera2Loader(private val activity: Activity) : CameraLoader() {
@@ -99,7 +103,14 @@ class Camera2Loader(private val activity: Activity) : CameraLoader() {
                 ImageReader.newInstance(size.width, size.height, ImageFormat.YUV_420_888, 2).apply {
                     setOnImageAvailableListener({ reader ->
                         val image = reader?.acquireNextImage() ?: return@setOnImageAvailableListener
-                        onPreviewFrame?.invoke(image.generateNV21Data(), image.width, image.height)
+                        val data68 = ImageUtil.getBytesFromImageAsType(image, 2)
+                        val rgb = ImageUtil.decodeYUV420SP(data68, size.width, size.height)
+                        val bitmap = Bitmap.createBitmap(
+                            rgb, 0, size.width,
+                            size.width, size.height,
+                            android.graphics.Bitmap.Config.RGB_565
+                        )
+                        onPreviewFrame?.invoke(bitmap,image.generateNV21Data(), image.width, image.height)
                         image.close()
                     }, null)
                 }
