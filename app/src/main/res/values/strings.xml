@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">GPUImageDemo</string>
+    <string name="title_activity_activity_main">GPUImage Sample</string>
+</resources>
